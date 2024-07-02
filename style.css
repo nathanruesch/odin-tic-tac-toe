@@ -1,0 +1,23 @@
+.gameboard {
+    background-color: antiquewhite;
+    border: 1px solid black;
+    border-radius: 10px;
+
+    display: grid;
+    grid-template-columns: repeat(3, 33%);
+    grid-template-rows: repeat(3, 33%);
+
+    width: 80vw;
+    padding-top: 100%;
+}
+
+.board-piece-parent {
+    border: 1px solid black;
+    border-radius: 2px;
+}
+
+.board-piece-text {
+    font-size: 2em;
+    font-weight: bold;
+    text-align: center;
+}
