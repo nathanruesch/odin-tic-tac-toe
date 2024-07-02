@@ -10,6 +10,9 @@ const winningSpaces = [
 ]
 
 const startGameButton = document.getElementById("submit-player-info-button");
+const playAgainButton = document.getElementById("play-again-button");
+
+const winDiv = document.getElementById("win-div");
 
 const playerOneNameInput = document.getElementById("player-one-name");
 const playerTwoNameInput = document.getElementById("player-two-name");
@@ -34,6 +37,7 @@ function startGame() {
     gameManager = generateGameManager();
     gameboard = generateGameBoard();
     gameboard.generateBoardPieces();
+    winDiv.style.display = "none";
 }
 
 function createPlayer(_name, _marker) {
@@ -47,10 +51,12 @@ function generateGameManager() {
     let turnCounter = 1;
     let currentPlayer = 1;
 
+    let _hasWinner = false;
+
     function advanceTurn() {
         turnCounter++;
 
-        currentPlayer = turnCounter % 2;
+        currentPlayer = currentPlayer === 1 ? 2 : 1;
     }
 
     function getTurn() {
@@ -58,6 +64,7 @@ function generateGameManager() {
     }
 
     function getPlayer() {
+        console.log(currentPlayer);
         return currentPlayer;
     }
 
@@ -69,7 +76,28 @@ function generateGameManager() {
         }
     }
 
-    return { advanceTurn, getTurn, getPlayer, getPlayerText };
+    function hasWinner() {
+        return _hasWinner;
+    }
+
+    function winGame(player) {
+        _hasWinner = true;
+
+        let _player = null;
+
+        if (player === 1) {
+            _player = playerOne;
+        } else if (player === 2) {
+            _player = playerTwo;
+        }
+
+        let winText = "Player " + _player.name + " has won in " + turnCounter + " turns using marker " + _player.marker;
+
+        document.getElementById("win-div-text").innerText = winText;
+        winDiv.style.display = "block";
+    }
+
+    return { advanceTurn, getTurn, getPlayer, getPlayerText, winGame, hasWinner };
 }
 
 function generateGameBoard() {
@@ -92,8 +120,11 @@ function generateGameBoard() {
     
     // Method to set a board piece occupied
     function setBoardPiece(pos, value) {
+        console.log("Tried to click board piece with pos " + pos + " and value " + value);
+
         if (!isPieceOccupied(pos)) {
-            boardPieces[pos - 1].setBoardPiece(value);
+            boardPieces[pos - 1].setBoardPiece(value, gameManager.getPlayer());
+            checkWinCondition();
             return true;
         } else {
             return false;
@@ -105,8 +136,53 @@ function generateGameBoard() {
     }
 
     function boardPieceClicked(event) {
+        if (gameManager.hasWinner()) { 
+            console.log("GAME HAS WINNER");
+            return; 
+        }
+
         if (setBoardPiece(event.target.dataset.indexNumber, gameManager.getPlayerText())) {
             gameManager.advanceTurn();
+        }
+    }
+
+    function checkWinCondition() {
+        let playerOneSpots = [];
+        let playerTwoSpots = [];
+
+        for (let i = 0; i < 9; i++) {
+            let piece = boardPieces[i];
+
+            if (piece.isOccupied()) {
+                console.log(piece);
+
+                if (piece.getPlayer() === 1) {
+                    playerOneSpots.push(i + 1);
+                } else if (piece.getPlayer() === 2) {
+                    playerTwoSpots.push(i + 1);
+                } else {
+                    console.log("Unknown player for occupied cell");
+                }
+            }
+        }
+
+        let playerOneWon = false;
+        let playerTwoWon = false;
+
+        let checker = (arr, target) => target.every(v => arr.includes(v));
+
+        winningSpaces.forEach(space => {
+            if (checker(playerOneSpots, space)) {
+                playerOneWon = true;
+            } else if (checker(playerTwoSpots, space)) {
+                playerTwoWon = true;
+            }
+        });
+
+        if (playerOneWon) {
+            gameManager.winGame(1);
+        } else if (playerTwoWon) {
+            gameManager.winGame(2);
         }
     }
 
@@ -130,21 +206,31 @@ function generateBoardPiece(data, parentDiv) {
     boardPiece.appendChild(boardText);
 
     let occupied = false;
+    let player = -1;
 
     parentDiv.appendChild(boardPiece);
 
-    function setBoardPiece(value) {
+    function setBoardPiece(value, _player) {
         boardText.innerText = value;
         occupied = true;
+        player = _player;
     }
 
     function isOccupied() {
         return occupied;
     }
 
+    function getPlayer() {
+        return player;
+    }
+
     console.log("board piece generated");
 
-    return { boardPiece, setBoardPiece, isOccupied };
+    return { boardPiece, setBoardPiece, isOccupied, getPlayer, player, occupied };
+}
+
+function playAgain() {
+    openDialog(playerInfoDialogName);
 }
 
 function openDialog(dialogName) {
@@ -163,3 +249,6 @@ function closeDialog(dialogName) {
 }
 
 startGameButton.addEventListener("click", startGame, false);
+playAgainButton.addEventListener("click", playAgain, false);
+
+playerInfoDialog.showModal();
